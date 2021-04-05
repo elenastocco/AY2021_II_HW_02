@@ -4,25 +4,21 @@
 */
 
 #include "project.h"
-#include "InterruptRoutines.h"
+#include "InterruptRoutines_UART.h"
 #include "RGBLedDriver.h"
 #include "stdio.h"
 
 #define HEAD 0xA0
 #define TAIL 0xC0
 
-// static char message[50]={'\0'};
+volatile uint8_t flag=0;
+volatile int status;
 
 int main(void)
 {
     RGBLed_Start();
     
     const Color BLACK={0,0,0}; // Initialising the LED to BLACK color
-    //const Color BLUE={0,0,255};
-    //const Color GREEN={0,255,0};
-    //const Color RED={255,0,0};
-    //const Color GRAY={128,128,128};
-    //const Color WHITE={255,255,255};
     
     RGBLed_WriteColor(BLACK);
     
@@ -32,81 +28,50 @@ int main(void)
     UART_Start();
     isr_UART_StartEx(Custom_UART_RX_ISR);
     
-    int status=0;
-    uint8_t red=0,green=0,blue=0;
+    uint8_t red=0,green=0,blue=0,head,tail;
+    status=0;
     
     while(1){
         
-        switch(status){
-            case 0:
-                if(UART_ReadRxStatus()==UART_RX_STS_FIFO_NOTEMPTY){
-                    uint8_t head=UART_ReadRxData();
-                    // sprintf(message,"Status: %d",status);
-                    // UART_PutString(message);
+        if(flag){
+            switch(status){
+                case 0:
+                    head=UART_ReadRxData();
                     if(head==HEAD){
                         status++;
+                        flag=0;
                         break;
                     }
-                    //RGBLed_WriteColor(RED);
-                    //CyDelay(1000);
-                    //status++;
+                    flag=0;
                     break;
-                }
-            case 1:
-                if(UART_ReadRxStatus()==UART_RX_STS_FIFO_NOTEMPTY){
+                case 1:
                     red=UART_ReadRxData();
-                    // sprintf(message," %d",status);
-                    // UART_PutString(message);
                     status++;
+                    flag=0;
                     break;
-                }
-                //RGBLed_WriteColor(GREEN);
-                //CyDelay(1000);
-                //status++;
-                break;
-            case 2:
-                if(UART_ReadRxStatus()==UART_RX_STS_FIFO_NOTEMPTY){
+                case 2:
                     green=UART_ReadRxData();
-                    // sprintf(message," %d",status);
-                    // UART_PutString(message);
                     status++;
+                    flag=0;
                     break;
-                }
-                //RGBLed_WriteColor(BLUE);
-                //CyDelay(1000);
-                //status++;
-                break;
-            case 3:
-                if(UART_ReadRxStatus()==UART_RX_STS_FIFO_NOTEMPTY){
+                case 3:
                     blue=UART_ReadRxData();
-                    // sprintf(message," %d",status);
-                    // UART_PutString(message);
                     status++;
+                    flag=0;
                     break;
-                }
-                //RGBLed_WriteColor(GRAY);
-                //CyDelay(1000);
-                //status++;
-                break;
-            case 4:
-                if(UART_ReadRxStatus()==UART_RX_STS_FIFO_NOTEMPTY){
-                    uint8_t tail=UART_ReadRxData();
-                    // sprintf(message," %d",status);
-                    // UART_PutString(message);
+                case 4:
+                    tail=UART_ReadRxData();
                     if(tail==TAIL){
                         Color color={red,green,blue};
                         RGBLed_WriteColor(color);
                         status=0;
+                        flag=0;
                         break;
                     }
-                    //RGBLed_WriteColor(WHITE);
-                    //CyDelay(1000);
-                    //status=0;
+                    flag=0;
                     break;
-                }
-        
+            }
         }
-
     }
 }
 
