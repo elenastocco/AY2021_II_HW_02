@@ -15,7 +15,6 @@ se sono passati -timeout- secondi, torno a status 0, altrimenti passo allo stato
 #define HEAD 0xA0
 #define TAIL 0xC0
 
-
 volatile uint8_t flag=0;
 volatile int status;
 volatile int counter = 0;
@@ -23,7 +22,6 @@ volatile uint8_t counter_flag =0;
 volatile uint8_t timeout_flag =0;
 volatile int timeout = 5;
 volatile int set_timeout = 5;
-
 
 int main(void)
 {
@@ -39,23 +37,27 @@ int main(void)
     UART_Start();
     isr_UART_StartEx(Custom_UART_RX_ISR);
     
-    Timer_Start();
+    //Timer_Start();
     isr_Timer_StartEx(Custom_Timer_ISR);
     
     uint8_t red=0,green=0,blue=0,head,tail;
     status=0;
     
-    while(1){
+  while(1){
+        ///*
         //if I'm in intermediate states, I check if -timeout- sec has passed
         if (status == 1 || status == 2 || status == 3){
+            Timer_Start();
             if (counter_flag == 1){
                 //5 sec has passed since the beginning of the status
                 //so I have to go back to state 0
+                Timer_Stop();
                 status = 0;
             }
             else {
                 //less than 5 sec has passed, so I can switch to the next state
-                status++;
+                Timer_Stop();
+                //status++;
             }
             counter_flag = 0;
         }
@@ -70,6 +72,7 @@ int main(void)
             }
             timeout_flag = 0;
         }
+        //*/
         if(flag){
             switch(status){
                 case 0:
@@ -84,19 +87,19 @@ int main(void)
                 case 1:
                     counter=0;
                     red=UART_ReadRxData();
-                    //status++;
+                    status++;
                     flag=0;
                     break;
                 case 2:
                     counter=0;
                     green=UART_ReadRxData();
-                    //status++;
+                    status++;
                     flag=0;
                     break;
                 case 3:
                     counter=0;
                     blue=UART_ReadRxData();
-                    //status++;
+                    status++;
                     flag=0;
                     break;
                 case 4:
@@ -105,8 +108,8 @@ int main(void)
                         Color color={red,green,blue};
                         RGBLed_WriteColor(color);
                         status=0;
-                        flag=0;
-                        break;
+                        //flag=0;
+                        //break;
                     }
                     flag=0;
                     break;
