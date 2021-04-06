@@ -22,6 +22,8 @@ volatile int counter = 0;
 volatile uint8_t counter_flag =0;
 volatile uint8_t timeout_flag =0;
 volatile int timeout = 5;
+volatile int set_timeout = 5;
+
 
 int main(void)
 {
@@ -63,7 +65,7 @@ int main(void)
             set_timeout = UART_ReadRxData();
             //read tail packet
             tail = UART_ReadRxData();
-            if (tail = TAIL && timeout>=1 && timeout>=20){
+            if (tail == TAIL && timeout>=1 && timeout>=20){
                 timeout=set_timeout;
             }
             timeout_flag = 0;
