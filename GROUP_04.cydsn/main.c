@@ -22,6 +22,7 @@ volatile int status = 0;
 volatile int counter = 0;
 volatile uint8_t timeout = 5;
 volatile uint8_t set_timeout = 5;
+volatile uint8_t counter_flag = 0;
 
 char message_1[20]="Hello there!\n";
 char message_2[20]="Fine!\n";
@@ -44,13 +45,16 @@ int main(void)
     uint8_t red=0,green=0,blue=0,head,tail;
     
     while(1){
-        if(flag){
+        
             switch(status){
                 case 0:
                     Timer_Stop();
+                    while(!flag);
                     head=UART_ReadRxData();
                     if(head==HEAD)
                         status++;
+                        //Timer_Start();
+                    
                     else if(head==HEADER_TIMEOUT)
                         status=5;
                     flag=0;
@@ -58,11 +62,23 @@ int main(void)
                 case 1:
                     counter=0;
                     Timer_Start();
-                    red=UART_ReadRxData();
-                    Timer_Stop();
-                    status++;
-                    flag=0;
-                    break;
+                    while(!flag){
+                        if(counter_flag){
+                            Timer_Stop();
+                            status=0;
+                            break;
+                        }
+                    }    
+                    if(flag){
+                        red=UART_ReadRxData();
+                        status++;
+                        flag=0;
+                        break;
+                    }
+                    else{
+                        Timer_Stop();    
+                        counter=0;
+                    }
                 case 2:
                     counter=0;
                     Timer_Start();
@@ -80,6 +96,7 @@ int main(void)
                     flag=0;
                     break;
                 case 4:
+                    while(!flag);
                     tail=UART_ReadRxData();
                     if(tail==TAIL){
                         Color color={red,green,blue};
@@ -92,6 +109,7 @@ int main(void)
                     flag=0;
                     break;
                 case 5:
+                    while(!flag);
                     set_timeout = UART_ReadRxData();
                     status--;
                     flag=0;

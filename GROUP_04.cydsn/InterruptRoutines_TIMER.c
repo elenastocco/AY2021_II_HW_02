@@ -8,6 +8,7 @@
 extern volatile int timeout;
 extern volatile int counter;
 extern volatile int status;
+extern volatile uint8_t counter_flag;
 
 char messageX[21]="Counters:";
 
@@ -21,7 +22,7 @@ CY_ISR(Custom_Timer_ISR)
     if (counter == timeout){
         //if 5 sec has passed
         //UART_PutString(messageX);
-        status = 0;
+        counter_flag = 1;
     }
 }
 
