@@ -10,18 +10,21 @@ se sono passati -timeout- secondi, torno a status 0, altrimenti passo allo stato
 #include "InterruptRoutines_UART.h"
 #include "InterruptRoutines_TIMER.h"
 #include "RGBLedDriver.h"
-#include "stdio.h"
 
+#define HEADER_TIMEOUT 0xA1
 #define HEAD 0xA0
 #define TAIL 0xC0
+#define LOW_TIM_TH 0x01
+#define HIGH_TIM_TH 0x14
 
-volatile uint8_t flag=0;
-volatile int status;
+volatile int flag = 0;
+volatile int status = 0;
 volatile int counter = 0;
-volatile uint8_t counter_flag =0;
-volatile uint8_t timeout_flag =0;
-volatile int timeout = 5;
-volatile int set_timeout = 5;
+volatile uint8_t timeout = 5;
+volatile uint8_t set_timeout = 5;
+
+char message_1[20]="Hello there!\n";
+char message_2[20]="Fine!\n";
 
 int main(void)
 {
@@ -31,74 +34,48 @@ int main(void)
     
     RGBLed_WriteColor(BLACK);
     
-    CyGlobalIntEnable; /* Enable global interrupts. */
-
-    /* Place your initialization/startup code here (e.g. MyInst_Start()) */
     UART_Start();
     isr_UART_StartEx(Custom_UART_RX_ISR);
     
-    //Timer_Start();
     isr_Timer_StartEx(Custom_Timer_ISR);
     
-    uint8_t red=0,green=0,blue=0,head,tail;
-    status=0;
+    CyGlobalIntEnable; /* Enable global interrupts. */
     
-  while(1){
-        ///*
-        //if I'm in intermediate states, I check if -timeout- sec has passed
-        if (status == 1 || status == 2 || status == 3){
-            Timer_Start();
-            if (counter_flag == 1){
-                //5 sec has passed since the beginning of the status
-                //so I have to go back to state 0
-                Timer_Stop();
-                status = 0;
-            }
-            else {
-                //less than 5 sec has passed, so I can switch to the next state
-                Timer_Stop();
-                //status++;
-            }
-            counter_flag = 0;
-        }
-        if (timeout_flag){
-            //if the packet header for timeout configuration has been sent
-            //read the desired timeout
-            set_timeout = UART_ReadRxData();
-            //read tail packet
-            tail = UART_ReadRxData();
-            if (tail == TAIL && timeout>=1 && timeout>=20){
-                timeout=set_timeout;
-            }
-            timeout_flag = 0;
-        }
-        //*/
+    uint8_t red=0,green=0,blue=0,head,tail;
+    
+    while(1){
         if(flag){
             switch(status){
                 case 0:
+                    Timer_Stop();
                     head=UART_ReadRxData();
-                    if(head==HEAD){
+                    if(head==HEAD)
                         status++;
-                        //flag=0;
-                        //break;
-                    }
+                    else if(head==HEADER_TIMEOUT)
+                        status=5;
                     flag=0;
                     break;
                 case 1:
                     counter=0;
+                    Timer_Start();
                     red=UART_ReadRxData();
+                    Timer_Stop();
                     status++;
                     flag=0;
                     break;
                 case 2:
                     counter=0;
+                    Timer_Start();
                     green=UART_ReadRxData();
+                    Timer_Stop();
                     status++;
                     flag=0;
                     break;
                 case 3:
                     counter=0;
+                    Timer_Start();
                     blue=UART_ReadRxData();
+                    Timer_Stop();
                     status++;
                     flag=0;
                     break;
@@ -107,11 +84,18 @@ int main(void)
                     if(tail==TAIL){
                         Color color={red,green,blue};
                         RGBLed_WriteColor(color);
+                        if(timeout != set_timeout)
+                            timeout = set_timeout;
                         status=0;
-                        //flag=0;
-                        //break;
+                        //UART_PutString(message_2);
                     }
                     flag=0;
+                    break;
+                case 5:
+                    set_timeout = UART_ReadRxData();
+                    status--;
+                    flag=0;
+                    //UART_PutString(message_1);
                     break;
             }
         }
