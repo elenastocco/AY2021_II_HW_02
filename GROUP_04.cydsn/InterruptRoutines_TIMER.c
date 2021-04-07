@@ -8,6 +8,8 @@ extern volatile int counter;
 extern volatile uint8_t counter_flag;
 CY_ISR(Custom_Timer_ISR)
 {
+    Timer_ReadStatusRegister();
+    
     //the variable counter increases by one every time an isr is triggered
     counter++;
     if (counter == timeout){
