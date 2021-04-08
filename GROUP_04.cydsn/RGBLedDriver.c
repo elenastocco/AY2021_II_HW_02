@@ -1,5 +1,9 @@
-/*
-*
+/* 
+*  \RGBLedDriver.c file 
+*  \author: Elena Stocco and Riccardo Mustoni
+*  \date: 31/03/2021 - 09/04/2021
+*  \assignment 02
+*  \group 4
 *
 */
 
