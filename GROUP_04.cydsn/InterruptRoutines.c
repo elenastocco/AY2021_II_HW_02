@@ -7,7 +7,6 @@
  * 
 */
 
-//#include "InterruptRoutines_TIMER.h"
 #include "InterruptRoutines.h"
 #include "stdio.h"
 
@@ -16,22 +15,15 @@ extern volatile int counter;
 extern volatile int status;
 extern volatile int counter_flag;
 
-char messageX[21]={"\0"};
-char messageY[21]="reached time out\n";
 
 CY_ISR(Custom_Timer_ISR)
 {   
     Timer_ReadStatusRegister();
-    //the variable counter increases by one every time an isr is triggered
     counter++;
-    
-    sprintf(messageX,"% d",counter);
-    UART_PutString(messageX);
     
     if (counter == timeout){
         //if 5 sec has passed
         counter_flag = 1;
-        UART_PutString(messageY);
     }
 }
 

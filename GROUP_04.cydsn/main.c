@@ -9,7 +9,6 @@
 
 #include "project.h"
 #include "InterruptRoutines.h"
-
 #include "RGBLedDriver.h"
 
 #define HEADER_TIMEOUT 0xA1
@@ -26,16 +25,13 @@ volatile uint8_t set_timeout = 5;
 volatile int counter_flag = 0;
 volatile uint8_t received;
 
-char message_1[20]="start again";
-char message_2[20]="Fine!\n";
-
+//function to count the time passed between intermediate state
 void Counter_Waiting(void){
     counter=0;
     Timer_Start();
     counter_flag=0;
     while(!flag){
         if(counter_flag){
-            //UART_PutString("passati 5 sec\r\n");
             Timer_Stop();
             status=0;
             break;   
@@ -49,12 +45,11 @@ int main(void)
     RGBLed_Start();
     
     const Color BLACK={0,0,0}; // Initialising the LED to BLACK color
-    
     RGBLed_WriteColor(BLACK);
     
     UART_Start();
-    isr_UART_StartEx(Custom_UART_RX_ISR);
     
+    isr_UART_StartEx(Custom_UART_RX_ISR);
     isr_Timer_StartEx(Custom_Timer_ISR);
     
     CyGlobalIntEnable; /* Enable global interrupts. */
@@ -64,29 +59,21 @@ int main(void)
     while(1){
             switch(status){
                 case 0:
-                    //UART_PutString("inizio stato 0");
                     Timer_Stop();
-                    while(!flag); //aspetto che arrivi il dato
-                    head=received; //metti received
-                    if(head==HEAD){
-                        //UART_PutString("head received");
+                    while(!flag); 
+                    head=received; 
+                    if(head==HEAD) 
                         status++;
-                    }
                     else if(head==HEADER_TIMEOUT)
                         status=5;
                     flag=0;
                     break;
                 case 1:
-                    //UART_PutString("Inizio conteggio stato 1\r\n");
-                    if(!flag){
+                    if(!flag)//if the data is not already arrived, start the counter
                         Counter_Waiting();
-                    }
-                    if(counter_flag){
+                    if(counter_flag)
                         break;
-                    }
-                    
                     else{
-                        //UART_PutString("arrivato rosso");
                         red=received;
                         status++;
                         flag=0;
@@ -94,30 +81,22 @@ int main(void)
                     }
                     break;
                 case 2:
-                    //UART_PutString("Inizio conteggio stato 2\r\n");
-                    if(!flag){
+                    if(!flag)
                         Counter_Waiting();
-                    }
-                    if(counter_flag){
+                    if(counter_flag)
                         break;
-                    }
                     else{
-                        //UART_PutString("arrivato verde");
                         green=received;
                         status++;
                         flag=0;
                         break;
                     }
                 case 3:
-                    //UART_PutString("Inizio conteggio stato 3");
-                    if(!flag){
+                    if(!flag)
                         Counter_Waiting();
-                    }
-                    if(counter_flag){
+                    if(counter_flag)
                         break;
-                    }
                     else{
-                        //UART_PutString("arrivato BLU");
                         blue=received;
                         status++;
                         flag=0;
@@ -136,7 +115,6 @@ int main(void)
                             if(timeout != set_timeout)
                                 timeout = set_timeout;
                             status=0;
-                            //UART_PutString(message_2);
                         }
                         flag=0;
                         break;}
@@ -145,7 +123,6 @@ int main(void)
                     set_timeout = received;
                     status--;
                     flag=0;
-                    //UART_PutString(message_1);
                     break;
             }
     }
