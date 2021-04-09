@@ -15,20 +15,21 @@ extern volatile int counter;
 extern volatile int status;
 extern volatile int counter_flag;
 
-char messageX[20]={"\0"};
-char messageY[20]=" Timeout reached\n";
+// These variables have been used for debug purposes
+//char messageX[20]={"\0"};
+//char messageY[20]=" Timeout reached\n";
 
 CY_ISR(Custom_Timer_ISR)
 {   
     Timer_ReadStatusRegister();
     counter++;
-    sprintf(messageX," %d",counter);
-    UART_PutString(messageX);
+    //sprintf(messageX," %d",counter);
+    //UART_PutString(messageX);
     
     if (counter == timeout){
         //if 5 sec has passed
         counter_flag = 1;
-        UART_PutString(messageY);
+        //UART_PutString(messageY);
     }
 }
 
