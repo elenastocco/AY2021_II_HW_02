@@ -1,14 +1,14 @@
-/*
-* timer: ogni volta che sono in uno stato intermedio (case 1,2,3), per prima cosa
-inizializzo un counter che viene incrementato di uno ad ogni esecuzione di InterruptRoutines_TIMER.
-all'inizio di ogni while(1), se sono in status 1,2,3 controllo il valore del counter.
-se sono passati -timeout- secondi, torno a status 0, altrimenti passo allo stato successivo
+/* 
+*  \main.c file 
+*  \authors: Elena Stocco and Riccardo Mustoni
+*  \date: 31/03/2021 - 09/04/2021
+*  \assignment 02
+*  \group 4
 *
 */
 
 #include "project.h"
-#include "InterruptRoutines_UART.h"
-#include "InterruptRoutines_TIMER.h"
+#include "InterruptRoutines.h"
 #include "RGBLedDriver.h"
 
 #define HEADER_TIMEOUT 0xA1
@@ -20,24 +20,35 @@ se sono passati -timeout- secondi, torno a status 0, altrimenti passo allo stato
 volatile int flag = 0;
 volatile int status = 0;
 volatile int counter = 0;
-volatile uint8_t timeout = 5;
+volatile int timeout = 5;
 volatile uint8_t set_timeout = 5;
-volatile uint8_t counter_flag = 0;
+volatile int counter_flag = 0;
+volatile uint8_t received;
 
-char message_1[20]="Hello there!\n";
-char message_2[20]="Fine!\n";
+//function to count the time passed between intermediate state
+void Counter_Waiting(void){
+    counter=0;
+    counter_flag=0;
+    Timer_Start();
+    while(!flag){
+        if(counter_flag){
+            status=0;
+            break;   
+        }
+    }
+    Timer_Stop();
+}
 
 int main(void)
 {
     RGBLed_Start();
     
     const Color BLACK={0,0,0}; // Initialising the LED to BLACK color
-    
     RGBLed_WriteColor(BLACK);
     
     UART_Start();
-    isr_UART_StartEx(Custom_UART_RX_ISR);
     
+    isr_UART_StartEx(Custom_UART_RX_ISR);
     isr_Timer_StartEx(Custom_Timer_ISR);
     
     CyGlobalIntEnable; /* Enable global interrupts. */
@@ -45,77 +56,65 @@ int main(void)
     uint8_t red=0,green=0,blue=0,head,tail;
     
     while(1){
-        
-            switch(status){
-                case 0:
-                    Timer_Stop();
-                    while(!flag);
-                    head=UART_ReadRxData();
-                    if(head==HEAD)
-                        status++;
-                        //Timer_Start();
-                    
-                    else if(head==HEADER_TIMEOUT)
-                        status=5;
-                    flag=0;
-                    break;
-                case 1:
-                    counter=0;
-                    Timer_Start();
-                    while(!flag){
-                        if(counter_flag){
-                            Timer_Stop();
-                            status=0;
-                            break;
-                        }
-                    }    
-                    if(flag){
-                        red=UART_ReadRxData();
-                        status++;
-                        flag=0;
-                        break;
-                    }
-                    else{
-                        Timer_Stop();    
-                        counter=0;
-                    }
-                case 2:
-                    counter=0;
-                    Timer_Start();
-                    green=UART_ReadRxData();
-                    Timer_Stop();
+        switch(status){
+            case 0:
+                while(!flag);
+                head=received;
+                if(head==HEAD)
+                    status++;
+                else if(head==HEADER_TIMEOUT)
+                    status=5;
+                flag=0;
+                break;
+            case 1:
+                // Start the counter
+                Counter_Waiting();
+                if(flag){
+                    red=received;
                     status++;
                     flag=0;
-                    break;
-                case 3:
-                    counter=0;
-                    Timer_Start();
-                    blue=UART_ReadRxData();
-                    Timer_Stop();
+                }
+                break;
+            case 2:
+                Counter_Waiting();
+                if(flag){
+                    green=received;
                     status++;
                     flag=0;
-                    break;
-                case 4:
-                    while(!flag);
-                    tail=UART_ReadRxData();
+                }
+                break;
+            case 3:
+                Counter_Waiting();
+                if(flag){
+                    blue=received;
+                    status++;
+                    flag=0;
+                }
+                break;
+            case 4:
+                Counter_Waiting();
+                if(flag){
+                    tail=received;
                     if(tail==TAIL){
                         Color color={red,green,blue};
                         RGBLed_WriteColor(color);
                         if(timeout != set_timeout)
                             timeout = set_timeout;
                         status=0;
-                        //UART_PutString(message_2);
                     }
                     flag=0;
-                    break;
-                case 5:
-                    while(!flag);
-                    set_timeout = UART_ReadRxData();
+                }
+                break;
+            case 5:
+                while(!flag);
+                if(received >= LOW_TIM_TH && received <= HIGH_TIM_TH){
+                    set_timeout = received;
                     status--;
-                    flag=0;
-                    //UART_PutString(message_1);
-                    break;
-            }
+                }
+                else
+                    status=0;
+                flag=0;
+                break;
         }
     }
 }
