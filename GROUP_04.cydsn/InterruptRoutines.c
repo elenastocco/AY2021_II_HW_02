@@ -1,6 +1,6 @@
 /* 
  *  \InterruptRoutines.c file
- *  \author: Elena Stocco and Riccardo Mustoni
+ *  \authors: Elena Stocco and Riccardo Mustoni
  *  \date: 31/03/2021 - 09/04/2021
  *  \assignment 02
  *  \group 4
@@ -15,15 +15,20 @@ extern volatile int counter;
 extern volatile int status;
 extern volatile int counter_flag;
 
+char messageX[20]={"\0"};
+char messageY[20]=" Timeout reached\n";
 
 CY_ISR(Custom_Timer_ISR)
 {   
     Timer_ReadStatusRegister();
     counter++;
+    sprintf(messageX," %d",counter);
+    UART_PutString(messageX);
     
     if (counter == timeout){
         //if 5 sec has passed
         counter_flag = 1;
+        UART_PutString(messageY);
     }
 }
 
